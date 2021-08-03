@@ -14,10 +14,10 @@ from sequoia.settings.passive import PassiveEnvironment
 from dataclasses import dataclass
 
 # Hparams include all hyperparameters for all methods
-from .Utils import BaseHParams, seed_everything
+from .utils import BaseHParams, seed_everything
 from simple_parsing import ArgumentParser
 from typing import Dict, Optional, Tuple
-from .Models import Model, model_types_map, optimizers_map, schedulers_map, ActorCritic
+from .models import Model, model_types_map, optimizers_map, schedulers_map, ActorCritic
 import torch
 from torch import Tensor
 from numpy import inf, floor
@@ -30,7 +30,7 @@ import math
 import torch.nn as nn
 from typing import Dict, List, Optional, Tuple
 import numpy as np
-from .Utils.rl_utils import sample_action
+from .utils.rl_utils import sample_action
 import inspect
 
 

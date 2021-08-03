@@ -11,7 +11,7 @@ from sequoia.settings.passive.cl.objects import (
     Rewards,
 )
 from dataclasses import dataclass
-from .Utils import BaseHParams
+from .utils import BaseHParams
 
 
 class Example(BaseMethod):

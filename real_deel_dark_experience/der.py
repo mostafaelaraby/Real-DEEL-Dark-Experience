@@ -11,9 +11,9 @@ from sequoia.settings.passive.cl.objects import (
     Rewards,
 )
 from dataclasses import dataclass
-from .Utils import BaseHParams
+from .utils import BaseHParams
 from sequoia.settings import SettingType
-from .Utils import Buffer
+from .utils import Buffer
 
 
 class DER(BaseMethod):
