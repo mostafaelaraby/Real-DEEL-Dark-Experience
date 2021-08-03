@@ -8,19 +8,20 @@ from sequoia.settings.sl import ContinualSLSetting, TaskIncrementalSLSetting, SL
 
 from real_deel_dark_experience import DER
 
+
 class TestDERMethod(MethodTests):
-    """ Tests for DER Method.
-    
+    """Tests for DER Method.
+
     The main test of interest is `test_debug`, which is implemented in the MethodTests
     class.
     """
-    
+
     Method: ClassVar[Type[DER]] = DER
 
     @classmethod
     @pytest.fixture
     def method(cls, session_config: Config, setting_type: Type[Setting]) -> DER:
-        """ Fixture that returns the Method instance to use when testing/debugging.
+        """Fixture that returns the Method instance to use when testing/debugging.
         Needs to be implemented when creating a new test class (to generate tests for a
         new method).
         """
@@ -38,10 +39,15 @@ class TestDERMethod(MethodTests):
             )
         return cls.Method(hparams=hparams)
 
-    def validate_results(self,
-                         setting: Setting,
-                         method: DER,
-                         results: Setting.Results,
-                         ) -> None:
+    def validate_results(
+        self,
+        setting: Setting,
+        method: DER,
+        results: Setting.Results,
+    ) -> None:
         assert results
         assert results.objective
+        # TODO: Add more rigorous testing, checking that the performance makes sense for
+        # the given setting, dataset, method, etc.
+        # See (https://github.com/lebrice/Sequoia/blob/master/examples/basic/pl_example_test.py)
+        # for an example.
