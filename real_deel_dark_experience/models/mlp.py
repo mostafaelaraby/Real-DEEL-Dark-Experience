@@ -7,7 +7,7 @@ import torch.nn as nn
 class MLP(Model):
     def __init__(self, image_space: Box, n_classes: int) -> None:
         modules_list, penulimate_layer_indx = self._get_modules(image_space, n_classes)
-        super(MLP, self).__init__(modules_list, penulimate_layer_indx)
+        super().__init__(modules_list, penulimate_layer_indx, n_classes=n_classes)
 
     def _get_modules(self, image_space: Box, n_classes: int):
         num_inputs = flatdim(image_space)

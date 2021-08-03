@@ -1,12 +1,14 @@
-from sequoia.common.config import WandbConfig
 import os
-from dataclasses import make_dataclass, fields
+from dataclasses import fields, make_dataclass
 from pathlib import Path
+
 from sequoia.common import Config
-from sequoia.settings import ClassIncrementalSetting
-from simple_parsing import ArgumentParser
-from real_deel_dark_experience import METHODS_MAPPING
+from sequoia.common.config import WandbConfig
 from sequoia.common.hparams import HyperParameters
+from sequoia.settings.sl import ClassIncrementalSetting
+from simple_parsing import ArgumentParser
+
+from real_deel_dark_experience import METHODS_MAPPING
 
 
 def prepare_args():

@@ -7,17 +7,17 @@ from .model import Model
 from gym.spaces import Box
 import torch.nn as nn
 from .model import Model
+from typing import Type
 
 
 class ActorCritic(Model):
-    def __init__(self, model_object: Model, image_space: Box, n_classes: int) -> None:
-        actor_model = model_object(image_space, n_classes)
-        critic_model = model_object(image_space, 1)
+    def __init__(self, model_type: Type[Model], image_space: Box, n_classes: int) -> None:
+        actor_model = model_type(image_space, n_classes)
+        critic_model = model_type(image_space, 1)
         encoder = actor_model.get_encoder()
         actor_decoder = actor_model.get_decoder()
-        super(ActorCritic, self).__init__(encoder + actor_decoder, len(encoder))
+        super().__init__(encoder + actor_decoder, len(encoder), n_classes=n_classes)
         self.critic_decoder = nn.Sequential(*critic_model.get_decoder())
-        
 
     def get_action_critic(self, x):
         """takes observation as input and returns actor/ critic

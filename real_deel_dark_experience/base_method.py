@@ -1,37 +1,30 @@
-from sequoia.methods import Method
-from sequoia.settings import ClassIncrementalSetting
-from sequoia.settings.active import ActiveEnvironment
-from sequoia.settings import (
-    ActiveSetting,
-    Observations,
-    Rewards,
-    Setting,
-    SettingType,
-    Actions,
-    Environment,
-)
-from sequoia.settings.passive import PassiveEnvironment
+import gym
+import numpy as np
+import torch
+import torch.nn as nn
+import tqdm
+import wandb
+import inspect
+from typing import List, Tuple, Optional, Dict
 from dataclasses import dataclass
+from gym import spaces
+from numpy import floor, inf
+from sequoia.methods import Method
+from sequoia.settings import (Actions, Environment, Observations, Rewards, Setting,
+                              SettingType)
+from sequoia.settings.sl import ClassIncrementalSetting, SLEnvironment, SLSetting
+from sequoia.settings.rl import RLEnvironment, RLSetting
+from sequoia.common.spaces import Image, TypedDictSpace
 
+from simple_parsing import ArgumentParser
+from torch import Tensor
+from wandb.wandb_run import Run
+
+from .models import (ActorCritic, Model, model_types_map, optimizers_map,
+                     schedulers_map)
 # Hparams include all hyperparameters for all methods
 from .utils import BaseHParams, seed_everything
-from simple_parsing import ArgumentParser
-from typing import Dict, Optional, Tuple
-from .models import Model, model_types_map, optimizers_map, schedulers_map, ActorCritic
-import torch
-from torch import Tensor
-from numpy import inf, floor
-import tqdm
-import gym
-import wandb
-from wandb.wandb_run import Run
-from gym import spaces
-import math
-import torch.nn as nn
-from typing import Dict, List, Optional, Tuple
-import numpy as np
 from .utils.rl_utils import sample_action
-import inspect
 
 
 class BaseMethod(Method, target_setting=Setting):
@@ -82,7 +75,7 @@ class BaseMethod(Method, target_setting=Setting):
         observation_space = setting.observation_space
         action_space = setting.action_space
         reward_space = setting.reward_space
-        if isinstance(setting, ActiveSetting):
+        if isinstance(setting, RLSetting):
             # Default batch size of 1 in RL
             self.hparams.batch_size = 1
             self.max_rl_train_steps = setting.steps_per_phase
@@ -95,18 +88,22 @@ class BaseMethod(Method, target_setting=Setting):
             assert action_space == reward_space
             self.classes_per_task = setting.increment
         self.n_classes = action_space.n
+        
+        x_space = observation_space.x
+
+        # Downgrade the encoder to a mlp if the input space is not an image. 
+        if not isinstance(observation_space.x, Image):
+            self.hparams.model_type = "mlp"
 
         # update model to actor critic for RL
         model_type = model_types_map[self.hparams.model_type]
-        image_space = observation_space.x
 
         if self._is_rl:
-            self.model = ActorCritic(model_type, image_space, action_space.n).to(
+            self.model = ActorCritic(model_type, x_space, action_space.n).to(
                 self.device
             )
         else:
-            self.model = model_type(
-                image_space, self.n_classes, bic=self.hparams.bic).to(self.device)
+            self.model = model_type(x_space, self.n_classes, bic=self.hparams.bic).to(self.device)
 
         optim_type, optim_defaults = self._get_optim_defaults(
             self.hparams.optimizer)
@@ -166,7 +163,6 @@ class BaseMethod(Method, target_setting=Setting):
         Args:
             setting (ClassIncrementalSetting): Setting used in the configuration
         """        
-        pass
 
     def fit(
         self,
@@ -184,7 +180,7 @@ class BaseMethod(Method, target_setting=Setting):
         else:
             self.fit_sl(train_env, valid_env)
 
-    def fit_rl(self, train_env: ActiveEnvironment, valid_env: ActiveEnvironment):
+    def fit_rl(self, train_env: RLEnvironment, valid_env: RLEnvironment):
         """fitting function that is used for both RL
 
         Args:
@@ -207,7 +203,7 @@ class BaseMethod(Method, target_setting=Setting):
             rewards: List[Tensor] = []
             entropy_term = 0
 
-            observation: ActiveSetting.Observations = train_env.reset()
+            observation: RLSetting.Observations = train_env.reset()
             # Convert numpy arrays in the observation into Tensors on the right device.
             observation = observation.torch(device=self.device)
 
@@ -223,12 +219,12 @@ class BaseMethod(Method, target_setting=Setting):
                     actor_output, return_entropy_log_prob=True
                 )
 
-                new_observation: ActiveSetting.Observations
-                reward: ActiveSetting.Rewards
+                new_observation: Observations
+                reward: RLSetting.Rewards
                 reward, new_observation, done = self.send_actions(
                     train_env, actor_output
                 )
-                action = ActiveSetting.Actions(
+                action = RLSetting.Actions(
                     y_pred=action.cpu().detach().numpy())
 
                 if self.render:
@@ -296,7 +292,7 @@ class BaseMethod(Method, target_setting=Setting):
             self.optimizer.step()
         self.post_fit()
 
-    def fit_sl(self, train_env: PassiveEnvironment, valid_env: PassiveEnvironment):
+    def fit_sl(self, train_env: SLEnvironment, valid_env: SLEnvironment):
         """ Example train loop.
         You can do whatever you want with train_env and valid_env here.
 
@@ -325,7 +321,7 @@ class BaseMethod(Method, target_setting=Setting):
                     break
         self.post_fit()
 
-    def pre_fit(self, train_env):
+    def pre_fit(self, train_env: Environment):
         """Prefit called before fitting a new task 
 
         Args:
@@ -337,7 +333,7 @@ class BaseMethod(Method, target_setting=Setting):
         if self._is_rl:
             n_batches_per_task = self.max_rl_train_steps
         else:
-            n_batches_per_task = len(train_env)
+            n_batches_per_task = train_env.length()
         if self.hparams.use_scheduler:
             if self.hparams.scheduler_name == "lambdalr":
                 # used to tune cyclic learning rate
@@ -696,7 +692,7 @@ class BaseMethod(Method, target_setting=Setting):
         if self._is_rl:
             # FIXME logits might need to be transformed to softmax probs.
             action = sample_action(logits)
-            action = ActiveSetting.Actions(
+            action = RLSetting.Actions(
                 y_pred=action.cpu().detach().numpy().squeeze()
             )
             new_observation, reward, done, _ = environment.step(action)

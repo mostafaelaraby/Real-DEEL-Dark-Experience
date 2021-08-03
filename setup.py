@@ -29,7 +29,8 @@ setuptools.setup(
     },
     python_requires='>=3.7',
     install_requires=[
-        "matplotlib==3.3.2",
+        "matplotlib",
+        # "matplotlib==3.3.2",
         "torch_optimizer==0.1.0",
     ],
 )

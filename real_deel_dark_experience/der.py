@@ -1,10 +1,9 @@
 from .base_method import BaseMethod
 
-
 from typing import Dict, Optional, Tuple
 from torch import Tensor, nn
 
-from sequoia.settings.passive.cl.objects import (
+from sequoia.settings.sl.continual import (
     Actions,
     Environment,
     Observations,

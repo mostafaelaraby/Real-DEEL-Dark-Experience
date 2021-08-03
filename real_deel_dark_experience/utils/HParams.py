@@ -1,10 +1,11 @@
 from dataclasses import dataclass
-from sequoia.common.hparams import HyperParameters, log_uniform
+from simple_parsing.helpers.hparams import HyperParameters, log_uniform
+from simple_parsing.helpers import choice
 import os
 import random
 import torch
 import numpy as np
-
+from ..models import model_types_map
 
 def seed_everything(seed=1234):
     random.seed(seed)
@@ -49,7 +50,7 @@ class BaseHParams(HyperParameters):
     # seed which can be tuned
     seed: int = 42
     # model name to select from models in the models folder
-    model_type: str = "resnet18"
+    model_type: str = choice(model_types_map.keys(), default="resnet18")  # type: ignore
     # optimizer name to select an optimizer
     optimizer: str = "adam"
     # scheduler name

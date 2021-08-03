@@ -9,7 +9,7 @@ class BasicBlock(nn.Module):
     expansion = 1
 
     def __init__(self, in_planes, planes, stride=1):
-        super(BasicBlock, self).__init__()
+        super().__init__()
         self.conv1 = nn.Conv2d(
             in_planes, planes, kernel_size=3, stride=stride, padding=1, bias=False
         )
@@ -43,9 +43,9 @@ class BasicBlock(nn.Module):
 class Resnet18(Model):
     def __init__(self, image_space: Box, n_classes: int, bic: bool = False) -> None:
         # assertion for Conv networks
-        assert len(image_space.shape) == 3
+        assert len(image_space.shape) == 3, image_space
         modules_list, penulimate_layer_indx = self._get_modules(image_space, n_classes)
-        super(Resnet18, self).__init__(modules_list, penulimate_layer_indx, n_classes, bic)
+        super().__init__(modules_list, penulimate_layer_indx, n_classes, bic)
 
     def _make_layer(self, block, planes, num_blocks, stride):
         strides = [stride] + [1] * (num_blocks - 1)

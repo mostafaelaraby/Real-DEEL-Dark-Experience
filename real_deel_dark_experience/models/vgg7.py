@@ -1,6 +1,7 @@
 from .model import Model
 from gym.spaces import Box
 import torch.nn as nn
+from typing import List
 
 
 class VGG7(Model):
@@ -28,7 +29,7 @@ class VGG7(Model):
         rand_tensor = self.get_random_input(image_space.shape)
         representation_size = self._compute_linear_input(encoder_list, rand_tensor)
 
-        classifier = []
+        classifier: List[nn.Module] = []
         classifier.append(
             nn.Sequential(
                 *[
@@ -43,4 +44,4 @@ class VGG7(Model):
             nn.Sequential(*[nn.Linear(1024, 512), nn.ReLU(True), nn.Dropout(),])
         )
         classifier.append(nn.Linear(512, n_classes))
-        super(VGG7, self).__init__(encoder_list + classifier, len(encoder_list))
+        super().__init__(encoder_list + classifier, len(encoder_list))

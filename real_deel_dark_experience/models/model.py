@@ -1,15 +1,22 @@
 from torch import nn as nn
 import torch
 import random
+from typing import Sequence
 
 
 class Model(nn.Module):
-    """Model wrapper for all models 
-    """
+    """Model wrapper for all models"""
 
-    def __init__(self, module_list: list, penulimate_layer_indx: int, n_classes: int, bic: bool = False):
+    def __init__(
+        self,
+        module_list: Sequence[nn.Module],
+        penulimate_layer_indx: int,
+        n_classes: int,
+        bic: bool = False,
+    ):
         # FIXME put its params inside dataclass
-        super(Model, self).__init__()
+        # TODO: Add some docstring to this to explain what `bic` is.
+        super().__init__()
         self.model = nn.ModuleList(module_list)
         self.dummy_param = nn.Parameter(torch.empty(0))
         self.penulimate_layer_indx = penulimate_layer_indx
@@ -21,22 +28,27 @@ class Model(nn.Module):
         if self.bic:
             self.current_task = 0
             self.bic_params = nn.Parameter(
-                torch.cat([torch.zeros(1, self.n_classes), torch.ones(1, self.n_classes)]))
+                torch.cat(
+                    [torch.zeros(1, self.n_classes), torch.ones(1, self.n_classes)]
+                )
+            )
 
     def new_task(self, task_id=None):
-        self.bic_params.data = torch.cat([torch.zeros(1, self.n_classes), torch.ones(
-            1, self.n_classes)]).to(self.dummy_param.device)  # default to no bias (logit= 1*l +0)
+        self.bic_params.data = torch.cat(
+            [torch.zeros(1, self.n_classes), torch.ones(1, self.n_classes)]
+        ).to(
+            self.dummy_param.device
+        )  # default to no bias (logit= 1*l +0)
 
     def __iter__(self):
-        """ Returns the Iterator object """
+        """Returns the Iterator object"""
         return iter(self.model)
 
     def __len__(self):
         return len(self.model)
 
     def get_penultimate(self, x):
-        penultimate_output = self.forward(
-            x, to_layer=self.penulimate_layer_indx)
+        penultimate_output = self.forward(x, to_layer=self.penulimate_layer_indx)
         logits = self.forward(
             penultimate_output, from_layer=self.penulimate_layer_indx + 1
         )
@@ -66,7 +78,7 @@ class Model(nn.Module):
                 # used to get layer output at a specific manifold layer
                 return x
 
-        if self.bic and bic and not(self.training):
+        if self.bic and bic and not (self.training):
             x = self.apply_bic(x)
         return x
 
@@ -113,6 +125,6 @@ class Model(nn.Module):
     def get_decoder(self):
         # FIXME debug it
         decoder = []
-        for layer in self.model[self.penulimate_layer_indx + 1:]:
+        for layer in self.model[self.penulimate_layer_indx + 1 :]:
             decoder.append(layer)
         return decoder
